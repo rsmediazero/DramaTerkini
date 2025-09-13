@@ -7,6 +7,7 @@ import Footer from "./components/Footer";
 import { config } from "@/lib/config";
 import Script from "next/script";
 import { AnalyticsTracker } from "@/lib/analyticsTracker";
+import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const poppins = Poppins({
@@ -50,7 +51,9 @@ export default function RootLayout({
     <html lang="id" className={`${inter.variable} ${poppins.variable}`}>
       <body className="min-h-screen bg-night-900 text-white antialiased selection:bg-primary-600/30 font-body">
         <Providers>
-          <AnalyticsTracker />
+          <Suspense fallback={null}>
+            <AnalyticsTracker />
+          </Suspense>
           <Header />
           {children}
         </Providers>
