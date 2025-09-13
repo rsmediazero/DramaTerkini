@@ -8,6 +8,7 @@ import { config } from "@/lib/config";
 import Script from "next/script";
 import { AnalyticsTracker } from "@/lib/analyticsTracker";
 import { Suspense } from "react";
+import { DisableDevTools } from "@/lib/disableDevTools";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const poppins = Poppins({
@@ -53,6 +54,7 @@ export default function RootLayout({
         <Providers>
           <Suspense fallback={null}>
             <AnalyticsTracker />
+            <DisableDevTools />
           </Suspense>
           <Header />
           {children}
