@@ -4,6 +4,9 @@ import "../styles/globals.css";
 import Providers from "./components/Providers";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { config } from "@/config";
+import Script from "next/script";
+import { AnalyticsTracker } from "@/lib/analyticsTracker";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const poppins = Poppins({
@@ -13,8 +16,29 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Cinewave — Home Streaming",
-  description: "Home streaming modern: grid cover, search, dan badge penonton.",
+  title:
+    "Download, Nonton, dan Streaming Drama Korea, China Gratis - " +
+    config.PROJECT_NAME,
+  description:
+    "Download, nonton, dan streaming drama Korea, China, Jepang, dan Asia lainnya secara gratis di " +
+    config.PROJECT_NAME +
+    ".",
+  keywords: [
+    "drama",
+    "drama korea",
+    "drama china",
+    "drama jepang",
+    "nonton drama",
+    "nonton drama gratis",
+    "nonton drama sub indo",
+    "download drama",
+    "download drama gratis",
+    "download drama sub indo",
+    "streaming drama",
+    "streaming drama gratis",
+    "streaming drama sub indo",
+    "dramabox",
+  ],
 };
 
 export default function RootLayout({
@@ -26,10 +50,21 @@ export default function RootLayout({
     <html lang="id" className={`${inter.variable} ${poppins.variable}`}>
       <body className="min-h-screen bg-night-900 text-white antialiased selection:bg-primary-600/30 font-body">
         <Providers>
+          <AnalyticsTracker />
           <Header />
           {children}
         </Providers>
         <Footer />
+        <Script id="ga-setup" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '${config.NEXT_PUBLIC_GA_ID}', {
+              page_path: window.location.pathname,
+            });
+          `}
+        </Script>
       </body>
     </html>
   );

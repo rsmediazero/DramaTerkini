@@ -1,18 +1,25 @@
+import { config } from "@/config";
+import Link from "next/link";
+
 function Footer() {
   return (
     <footer className="border-t border-white/10">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 text-sm text-white/60 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p>© 2025 Cinewave. Semua hak dilindungi.</p>
+        <p>© {new Date().getFullYear()} Cinewave. Semua hak dilindungi.</p>
         <div className="flex items-center gap-4">
-          <a href="#" className="hover:text-white transition">
+          <Link href="/kebijakan" className="hover:text-white transition">
             Kebijakan
-          </a>
-          <a href="#" className="hover:text-white transition">
-            Bantuan
-          </a>
-          <a href="#" className="hover:text-white transition">
+          </Link>
+          <Link href="/tentang" className="hover:text-white transition">
             Tentang
-          </a>
+          </Link>
+          <Link
+            href={config.BUSSINESS_CONTACT_TELE}
+            target="_blank"
+            className="hover:text-white transition"
+          >
+            Telegram
+          </Link>
         </div>
       </div>
     </footer>

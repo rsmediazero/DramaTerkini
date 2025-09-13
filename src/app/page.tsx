@@ -7,6 +7,7 @@ import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { useFeedInfinite } from "@/hooks/useFeedInfinite";
 import { useDebouncedValue } from "@/hooks/useDeboucedValue";
 import { useSearch } from "./components/Providers";
+import Iklan from "./components/Iklan";
 
 export default function Page() {
   const { query } = useSearch();
@@ -45,6 +46,10 @@ export default function Page() {
 
   return (
     <main className="py-6 sm:py-8 min-h-screen">
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mb-6">
+        <Iklan className="min-h-40" />
+      </section>
+
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {!isSearch && (
           <div className="mb-6 flex gap-3 items-center">
