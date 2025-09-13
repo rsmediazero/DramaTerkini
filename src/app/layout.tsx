@@ -4,7 +4,7 @@ import "../styles/globals.css";
 import Providers from "./components/Providers";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
-import { config } from "@/config";
+import { config } from "@/lib/config";
 import Script from "next/script";
 import { AnalyticsTracker } from "@/lib/analyticsTracker";
 

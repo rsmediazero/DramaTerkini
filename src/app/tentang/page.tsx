@@ -1,4 +1,4 @@
-import { config } from "@/config";
+import { config } from "@/lib/config";
 
 export const metadata = {
   title: "Tentang — " + config.PROJECT_NAME,

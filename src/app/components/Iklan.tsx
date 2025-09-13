@@ -1,4 +1,4 @@
-import { config } from "@/config";
+import { config } from "@/lib/config";
 import Link from "next/link";
 
 function Iklan({ className }: { className?: string }) {
@@ -13,13 +13,13 @@ function Iklan({ className }: { className?: string }) {
       </div>
       <div className="text-sm text-white/70">
         Mau pasang iklan di sini? Hubungi saya di{" "}
-        <Link
+        <a
           target="_blank"
           href={config.BUSSINESS_CONTACT_TELE}
           className="text-blue-400 underline"
         >
           Telegram
-        </Link>
+        </a>
         !
       </div>
     </div>

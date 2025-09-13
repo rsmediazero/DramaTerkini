@@ -1,4 +1,4 @@
-import { config } from "@/config";
+import { config } from "@/lib/config";
 import Link from "next/link";
 
 function Footer() {
@@ -13,13 +13,13 @@ function Footer() {
           <Link href="/tentang" className="hover:text-white transition">
             Tentang
           </Link>
-          <Link
+          <a
             href={config.BUSSINESS_CONTACT_TELE}
             target="_blank"
             className="hover:text-white transition"
           >
             Telegram
-          </Link>
+          </a>
         </div>
       </div>
     </footer>
