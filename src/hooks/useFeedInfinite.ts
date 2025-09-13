@@ -1,13 +1,22 @@
 import useSWRInfinite from "swr/infinite";
 import { useEffect } from "react";
 
+type FeedRecord = {
+  bookId: string | number;
+  [key: string]: unknown;
+};
+
+type FeedPage = {
+  records?: FeedRecord[];
+};
+
 const getJson = (u: string, init?: RequestInit) =>
   fetch(u, { cache: "no-store", ...init }).then((r) => r.json());
 
 export function useFeedInfinite(debouncedQuery: string) {
   const isSearch = debouncedQuery.trim().length > 0;
 
-  const getKey = (pageIndex: number, previousPageData: any) => {
+  const getKey = (pageIndex: number, previousPageData: FeedPage | null) => {
     if (
       pageIndex > 0 &&
       previousPageData &&
@@ -18,12 +27,11 @@ export function useFeedInfinite(debouncedQuery: string) {
 
     if (isSearch) {
       if (pageIndex > 0) return null;
-      return ["search", debouncedQuery, 1];
+      return ["search", debouncedQuery, 1] as const;
     }
 
     const pageNo = pageIndex + 1;
-
-    return ["latest", pageNo];
+    return ["latest", pageNo] as const;
   };
 
   const fetcher = async (key: readonly unknown[]) => {
@@ -67,7 +75,8 @@ export function useFeedInfinite(debouncedQuery: string) {
 
   // de-dupe by bookId
   const seen = new Set<string>();
-  const records = flat.filter((r: any) => {
+
+  const records = flat.filter((r: FeedRecord) => {
     const id = String(r.bookId);
     if (seen.has(id)) return false;
     seen.add(id);

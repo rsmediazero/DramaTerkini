@@ -15,6 +15,17 @@ export function OPTIONS(req: NextRequest) {
   return handlePreflight(req);
 }
 
+// --- Types ---
+type Chapter = {
+  chapterId: string | number;
+  chapterIndex?: number;
+  chapterName?: string;
+  chapterImg?: string;
+  isCharge?: number;
+  chargeChapter?: boolean;
+  cdnList?: unknown[];
+};
+
 export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ bookId: string }> }
@@ -25,28 +36,30 @@ export async function GET(
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   const rl = hit(ip, 60, 60_000);
-  if (!rl.ok)
+  if (!rl.ok) {
     return NextResponse.json(
       { error: "rate limited" },
       { status: 429, headers }
     );
+  }
 
   const url = new URL(req.url);
   const index = Number(url.searchParams.get("index") ?? 1);
   const raw = url.searchParams.get("raw") === "1";
 
-  let { status, data } = await fetchStream(bookId, index);
+  const { status, data } = await fetchStream(bookId, index);
 
   // pilih episode yg sesuai index (0-based di chapterIndex)
-  const chapters = data?.data?.chapterList ?? [];
+  const chapters: Chapter[] = data?.data?.chapterList ?? [];
   const wantedIdx = Math.max(0, Number(index) - 1);
   const chapter =
-    chapters.find((ch: any) => Number(ch.chapterIndex ?? 0) === wantedIdx) ??
+    chapters.find((ch) => Number(ch.chapterIndex ?? 0) === wantedIdx) ??
     chapters[0] ??
     null;
 
-  if (!chapter)
+  if (!chapter) {
     return NextResponse.json({ chapter: null }, { status: 404, headers });
+  }
 
   if (raw) return NextResponse.json(data, { status, headers }); // debug penuh
 
@@ -77,8 +90,6 @@ export async function GET(
     })),
     initialQuality: initial?.quality ?? null,
   };
-
-  // console.log(pa);
 
   return NextResponse.json({ chapter: payload }, { status, headers });
 }

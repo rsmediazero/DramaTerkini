@@ -44,7 +44,7 @@ export default function Page() {
   }, [isSearch, inView, isLoadingMore, isReachingEnd, setSize]);
 
   return (
-    <main className="py-6 sm:py-8 min-h-[91vh]">
+    <main className="py-6 sm:py-8 min-h-screen">
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {!isSearch && (
           <div className="mb-6 flex gap-3 items-center">
@@ -83,9 +83,7 @@ export default function Page() {
           // <div className="py-6 text-center text-white/70">Memuat…</div>
         )}
 
-        {!isReachingEnd && (
-          <div ref={ref as any} className="h-10" aria-hidden />
-        )}
+        {!isReachingEnd && <div ref={ref} className="h-10" aria-hidden />}
 
         {!isSearch && !isReachingEnd && !isLoadingMore && (
           <div className="py-6 text-center">

@@ -1,7 +1,6 @@
 "use client";
 import { useMemo } from "react";
 import Image from "next/image";
-import { useSearch } from "./Providers";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { Item } from "@/types/item";
 import Link from "next/link";
@@ -34,8 +33,6 @@ export default function Grid({
   serverFiltered?: boolean;
   q?: string;
 }) {
-  const { query } = useSearch();
-
   const filtered = useMemo(() => {
     if (isLoading) return [];
     if (serverFiltered) return items;

@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
         hostname: "nawsvideo.dramaboxdb.com",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "nvideo.dramaboxdb.com",
+        pathname: "/**",
+      },
     ],
   },
 };

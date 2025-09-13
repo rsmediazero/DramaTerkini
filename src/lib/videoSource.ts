@@ -1,5 +1,6 @@
 import { VideoSource } from "@/types/videoSource";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export function mapVideoSources(cdnList: any[] = []): VideoSource[] {
   const out: VideoSource[] = [];
   for (const cdn of cdnList ?? []) {
@@ -36,6 +37,7 @@ export function mapVideoSources(cdnList: any[] = []): VideoSource[] {
     return true;
   });
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 // Pilih awal: pakai preferensi quality kalau ada, fallback ke urutan terbaik
 export function pickInitialSource(

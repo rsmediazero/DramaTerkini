@@ -47,7 +47,6 @@ function toDetail(bookId: string, j: ChaptersResp): DramaDetail {
       isDefault: s.isDefault,
       isVip: s.isVip,
       mime: "video/mp4",
-      expiresAtEpoch: s as any as number, // ignore if not present
     })) as PlayerSource[],
   }));
 

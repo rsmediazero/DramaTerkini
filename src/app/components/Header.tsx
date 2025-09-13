@@ -4,6 +4,7 @@ import { useSearch } from "./Providers";
 import clsx from "clsx";
 import { useDebouncedValue } from "@/hooks/useDeboucedValue";
 import { DotLottieReact } from "@lottiefiles/dotlottie-react";
+import Link from "next/link";
 
 export default function Header() {
   const { query, setQuery } = useSearch();
@@ -29,7 +30,7 @@ export default function Header() {
       <div className={clsx("glass", scrolled && "glass--scrolled")}>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center gap-4">
           {/* Logo */}
-          <a
+          <Link
             href="/"
             className="flex items-center gap-3 shrink-0"
             aria-label="DramaBoxGratis Home"
@@ -46,7 +47,7 @@ export default function Header() {
             <span className="font-display text-xl tracking-tight">
               DramaBox<span className="grad-text">Gratis</span>
             </span>
-          </a>
+          </Link>
 
           {/* Search */}
           <div className="flex-1 w-full">

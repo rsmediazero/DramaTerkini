@@ -1,6 +1,5 @@
 "use client";
-
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { PlayerSource } from "@/types/drama";
 
 type Opts = {
@@ -15,22 +14,21 @@ export function usePlyrPlayer(
   sources: PlayerSource[],
   opts?: Opts
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const playerRef = useRef<any>(null);
 
-  // Init Plyr sekali saat <video> siap
+  // Init sekali
   useEffect(() => {
     const el = videoRef.current;
     if (!el || playerRef.current) return;
-
-    let mounted = true;
+    const mounted = true;
     (async () => {
       const [{ default: Plyr }] = await Promise.all([import("plyr")]);
       if (!mounted) return;
-
       playerRef.current = new Plyr(el, {
         ratio: opts?.orientation === "portrait" ? "9:16" : "16:9",
-        clickToPlay: true,
         autopause: true,
+        clickToPlay: true,
         controls: opts?.controls ?? [
           "play-large",
           "play",
@@ -42,17 +40,9 @@ export function usePlyrPlayer(
           "pip",
           "airplay",
           "fullscreen",
-          "quality",
         ],
-        // Quality menu untuk HTML5 MP4 akan aktif kalau ada <source size=...>
-        quality: {
-          default: opts?.defaultQuality ?? 720,
-          options: [], // akan diisi otomatis dari 'size'
-          forced: true,
-        },
       });
     })();
-
     return () => {
       try {
         playerRef.current?.destroy?.();
@@ -62,91 +52,102 @@ export function usePlyrPlayer(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoRef]);
 
-  // Ganti sumber setiap kali daftar MP4 berubah
+  // Utility: unik per kualitas + urut desc
+  const uniqOrdered = (list: PlayerSource[]) => {
+    const m = new Map<number, PlayerSource>();
+    for (const s of list) if (!m.has(s.quality)) m.set(s.quality, s);
+    return Array.from(m.values()).sort((a, b) => b.quality - a.quality);
+  };
+
+  // Set sumber default saat sources berubah
   useEffect(() => {
-    const video = videoRef.current;
-    const player = playerRef.current;
-    if (!video || !player) return;
+    const p = playerRef.current;
+    const v = videoRef.current;
+    if (!p || !v) return;
 
-    // Bersihkan poster & isi ulang
-    if (opts?.poster) video.setAttribute("poster", opts.poster);
-    else video.removeAttribute("poster");
+    // poster
+    if (opts?.poster) v.setAttribute("poster", opts.poster);
+    else v.removeAttribute("poster");
 
-    // Jika kosong → reset
-    if (!sources || sources.length === 0) {
-      video.pause();
-      video.removeAttribute("src");
-      video.load();
+    if (!sources?.length) {
+      v.pause();
+      v.removeAttribute("src");
+      v.load();
       return;
     }
 
-    // Susun sources MP4 (pastikan di layer atas kamu sudah filter per-CDN
-    // agar tiap 'quality' (size) unik)
-    const uniqByQuality = new Map<number, PlayerSource>();
-    for (const s of sources) {
-      if (!uniqByQuality.has(s.quality)) uniqByQuality.set(s.quality, s);
-    }
-    const sorted = Array.from(uniqByQuality.values())
-      // .filter((s) => !s.isVip) // <-- opsional: sembunyikan VIP
-      .sort((a, b) => b.quality - a.quality); // tinggi → rendah
-
-    const plyrSources = sorted.map((s) => ({
+    // pasang semua kualitas (biar nanti bisa dipakai juga)
+    const ordered = uniqOrdered(sources);
+    const plyrSources = ordered.map((s) => ({
       src: s.url,
       type: s.mime || "video/mp4",
-      size: s.quality, // << penting untuk menu Quality
+      size: s.quality,
     }));
 
-    const keepTime = Number.isFinite(player.currentTime)
-      ? player.currentTime
-      : 0;
-    const wasPlaying = !!player.playing;
+    const keep = Number.isFinite(p.currentTime) ? p.currentTime : 0;
+    const was = !!p.playing;
 
-    // Set sumber ke Plyr
-    player.source = {
+    p.source = {
       type: "video",
-      title: "",
       poster: opts?.poster ?? undefined,
       sources: plyrSources,
-      // previewThumbnails & tracks kalau ada:
-      // previewThumbnails: { src: "/thumbnails.vtt" },
-      // tracks: [{ kind: "captions", label: "ID", srclang: "id", src: "/cap.vtt", default: true }],
     };
 
-    // Atur default quality (kalau ada)
-    const defaultQ = opts?.defaultQuality ?? sorted[0]?.quality;
-    if (defaultQ) {
+    // pilih default / tertinggi
+    const defQ = opts?.defaultQuality ?? ordered[0]?.quality;
+    p.once("loadeddata", () => {
       try {
-        player.quality = defaultQ;
+        p.currentTime = keep;
       } catch {}
-    }
-
-    // Restore posisi & play jika sebelumnya playing
-    player.once("loadeddata", () => {
-      try {
-        player.currentTime = keepTime;
-      } catch {}
-      if (wasPlaying) player.play().catch(() => {});
-    });
-
-    // Fallback: kalau error, turun ke kualitas berikutnya (lebih rendah)
-    let tried = new Set<number>();
-    const onError = () => {
-      const qualList = sorted.map((s) => s.quality).sort((a, b) => b - a);
-      const current = Number(player.quality) || defaultQ || qualList[0];
-      tried.add(current);
-      const next = qualList.find((q) => !tried.has(q));
-      if (next) {
+      if (defQ) {
         try {
-          player.quality = next;
+          p.quality = defQ;
         } catch {}
       }
-    };
-    video.addEventListener("error", onError);
-
-    return () => {
-      video.removeEventListener("error", onError);
-    };
+      if (was) p.play().catch(() => {});
+    });
   }, [JSON.stringify(sources), opts?.poster, opts?.defaultQuality, videoRef]);
 
-  return { player: playerRef.current as any };
+  // >>> Fungsi utama: ganti ke kualitas tertentu dengan hard switch sumber
+  const switchQuality = useCallback(
+    (q: number) => {
+      const p = playerRef.current;
+      const v = videoRef.current;
+      if (!p || !v || !sources?.length) return;
+
+      const ordered = uniqOrdered(sources);
+      const target = ordered.find((s) => s.quality === q) ?? ordered[0];
+      if (!target) return;
+
+      const keep = Number.isFinite(p.currentTime) ? p.currentTime : 0;
+      const was = !!p.playing;
+
+      // set hanya satu source (yang dipilih) → pasti pindah
+      p.source = {
+        type: "video",
+        poster: opts?.poster ?? undefined,
+        sources: [
+          {
+            src: target.url,
+            type: target.mime || "video/mp4",
+            size: target.quality,
+          },
+        ],
+      };
+
+      console.log("Switch Quality To :", target.quality);
+
+      const onLoaded = () => {
+        try {
+          p.currentTime = keep;
+        } catch {}
+        if (was) p.play().catch(() => {});
+        v.removeEventListener("loadeddata", onLoaded);
+      };
+      v.addEventListener("loadeddata", onLoaded, { once: true });
+    },
+    [videoRef, JSON.stringify(sources), opts?.poster]
+  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return { player: playerRef.current as any, switchQuality };
 }

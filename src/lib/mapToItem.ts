@@ -19,6 +19,7 @@ function defaultCornerColor(name?: string) {
   return "#000000AA";
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export function mapToItem(r: any): Item {
   const tags =
     r.tags ??
@@ -27,6 +28,7 @@ export function mapToItem(r: any): Item {
     (Array.isArray(r.tagV3s)
       ? r.tagV3s.map((t: any) => t.tagName).filter(Boolean)
       : []);
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const cover = r.coverWap ?? r.cover ?? r.coverUrl ?? r.image ?? r.pic ?? "";
 

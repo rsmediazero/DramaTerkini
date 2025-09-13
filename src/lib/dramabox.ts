@@ -60,6 +60,7 @@ export function buildHeaders(tk: DramaBoxToken) {
   } as const;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 async function postUpstream<T = any>(
   url: string,
   body: any,
@@ -79,7 +80,9 @@ async function postUpstream<T = any>(
     throw new Error(`Upstream error: ${err.message}`);
   }
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export async function withTokenRetry<T = any>(
   fn: (tk: DramaBoxToken) => Promise<{ status: number; data: T }>
 ): Promise<{ status: number; data: T }> {

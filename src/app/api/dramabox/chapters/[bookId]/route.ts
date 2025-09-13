@@ -2,6 +2,46 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchStream } from "@/lib/dramabox";
 import { applyCors, handlePreflight } from "@/lib/cors";
 
+type Chapter = {
+  chapterId: string | number;
+  chapterIndex?: number;
+  chapterName?: string;
+  chapterImg?: string;
+  isCharge?: number;
+  chargeChapter?: boolean;
+  cdnList?: Cdn[];
+};
+
+type Cdn = {
+  cdnDomain: string;
+  isDefault: number;
+  videoPathList?: VideoPath[];
+};
+
+type VideoPath = {
+  quality: number;
+  videoPath: string;
+  isDefault?: number;
+  isVipEquity?: number;
+};
+
+type Episode = {
+  id: string;
+  index: number;
+  name: string;
+  thumbnail: string | null;
+  isCharge: boolean;
+  sources: Source[];
+};
+
+type Source = {
+  url: string;
+  quality: number;
+  cdn: string;
+  isDefault: boolean;
+  isVip: boolean;
+};
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export function OPTIONS(req: NextRequest) {
@@ -32,11 +72,10 @@ export async function GET(
     orientation: "portrait" as const, // <-- potrait
   };
 
-  const episodes = (d.chapterList ?? []).map((ch: any) => {
-    // flatten cdnList -> videoPathList
-    const sources = (ch.cdnList ?? [])
-      .flatMap((cdn: any) =>
-        (cdn.videoPathList ?? []).map((v: any) => ({
+  const episodes: Episode[] = (d.chapterList ?? []).map((ch: Chapter) => {
+    const sources: Source[] = (ch.cdnList ?? [])
+      .flatMap((cdn: Cdn) =>
+        (cdn.videoPathList ?? []).map((v: VideoPath) => ({
           url: v.videoPath,
           quality: Number(v.quality ?? 0),
           cdn: String(cdn.cdnDomain ?? ""),
@@ -44,10 +83,9 @@ export async function GET(
           isVip: v.isVipEquity === 1,
         }))
       )
-      .filter((s: any) => s.url && s.quality);
+      .filter((s): s is Source => Boolean(s.url && s.quality));
 
-    // urutkan default dulu, lalu kualitas tertinggi
-    sources.sort((a: any, b: any) => {
+    sources.sort((a, b) => {
       if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
       return b.quality - a.quality;
     });

@@ -18,24 +18,18 @@ import { useDramaDetail } from "@/hooks/useDramaDetail";
 import { usePlyrPlayer } from "@/hooks/usePlyrPlayer";
 import type { PlayerSource } from "@/types/drama";
 import { useDramaChaptersInfinite } from "@/hooks/useDramaChaptersInfinite";
+import Image from "next/image";
 
 export function WatchClient({ bookId }: { bookId: string }) {
-  const {
-    meta,
-    episodes,
-    isLoadingInitial,
-    isLoadingMore,
-    isReachingEnd,
-    loadMore,
-  } = useDramaChaptersInfinite(bookId);
+  const { meta, episodes, isLoadingMore, isReachingEnd, loadMore } =
+    useDramaChaptersInfinite(bookId);
 
-  const { detail, isLoading } = useDramaDetail(bookId, 1);
+  const { detail } = useDramaDetail(bookId, 1);
   const [episodeIdx, setEpisodeIdx] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // safe guards
   const ep = episodes[episodeIdx];
-  const title = meta.bookName ?? "Memuat…";
   const cover = meta.bookCover ?? "";
   const poster = ep?.thumbnail || cover || "";
 
@@ -47,13 +41,6 @@ export function WatchClient({ bookId }: { bookId: string }) {
 
   const [cdn, setCdn] = useState<string | null>(null);
 
-  useEffect(() => {
-    const def =
-      ep?.sources?.find((s) => s.isDefault) ??
-      ep?.sources?.slice().sort((a, b) => b.quality - a.quality)[0];
-    setCdn(def?.cdn ?? ep?.sources?.[0]?.cdn ?? null);
-  }, [episodeIdx, ep?.sources]);
-
   const filteredSources: PlayerSource[] = useMemo(() => {
     // const list = (ep?.sources ?? []).filter((s) => !s.isVip);
     const list = ep?.sources ?? [];
@@ -64,13 +51,56 @@ export function WatchClient({ bookId }: { bookId: string }) {
     });
   }, [ep?.sources, cdn]);
 
-  // Inisialisasi & update Plyr
-  usePlyrPlayer(videoRef, filteredSources, {
+  const qualities = useMemo(
+    () =>
+      Array.from(new Set((filteredSources ?? []).map((s) => s.quality))).sort(
+        (a, b) => b - a
+      ),
+    [filteredSources]
+  );
+
+  // defaultQuality dari detail/uiHints atau kualitas tertinggi
+  const defaultQ = useMemo(
+    () => detail?.uiHints?.defaultQuality ?? qualities[0],
+    [detail?.uiHints?.defaultQuality, qualities]
+  );
+
+  useEffect(() => {
+    const def =
+      ep?.sources?.find((s) => s.isDefault) ??
+      ep?.sources?.slice().sort((a, b) => b.quality - a.quality)[0];
+    setCdn(def?.cdn ?? ep?.sources?.[0]?.cdn ?? null);
+    setQuality(defaultQ);
+  }, [defaultQ, episodeIdx, ep?.sources]);
+
+  const { switchQuality } = usePlyrPlayer(videoRef, filteredSources, {
     poster: ep?.thumbnail ?? detail?.cover ?? null,
     orientation: detail?.orientation ?? "portrait",
     defaultQuality: detail?.uiHints?.defaultQuality ?? 720,
-    // controls: ["play-large","play","progress","current-time","mute","volume","settings","pip","airplay","fullscreen"]
+    controls: [
+      "quality",
+      "play",
+      "progress",
+      "current-time",
+      "mute",
+      "fullscreen",
+      "settings",
+      "pip",
+      "sources",
+      "airplay",
+      "volume",
+    ],
   });
+
+  const [quality, setQuality] = useState<number | undefined>(qualities[0]);
+  useEffect(() => {
+    setQuality(qualities[0]);
+  }, [episodeIdx, cdn, qualities]);
+
+  const onSetQuality = async (q: number) => {
+    setQuality(q);
+    switchQuality(q);
+  };
 
   return (
     <main className="py-6 sm:py-8 min-h-[91vh]">
@@ -149,9 +179,10 @@ export function WatchClient({ bookId }: { bookId: string }) {
                   // Plyr akan inject controls sendiri; boleh tambahkan "controls" untuk fallback
                   controls
                 />
-                {/* Overlay selectors: CDN + info current ep */}
+                {/* Overlay selectors: CDN + kualitas + now playing */}
                 <div className="absolute inset-x-0 top-0 p-3 sm:p-4">
-                  <div className="glass rounded-xl px-3 sm:px-4 py-2 flex flex-wrap gap-2 items-center">
+                  <div className="glass rounded-xl px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2">
+                    {/* CDN */}
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-white/70">CDN</span>
                       <select
@@ -166,6 +197,31 @@ export function WatchClient({ bookId }: { bookId: string }) {
                         ))}
                       </select>
                     </div>
+
+                    {/* QUALITY — tombol eksternal */}
+                    {qualities.length > 1 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-white/70">Kualitas</span>
+                        <div className="flex items-center gap-1">
+                          {qualities.map((q) => (
+                            <button
+                              key={q}
+                              onClick={() => onSetQuality(q)}
+                              disabled={q === quality}
+                              className={clsx(
+                                "rounded-md px-2 py-1 text-xs border transition",
+                                q === quality
+                                  ? "bg-primary/[.25] border-primary/50"
+                                  : "bg-white/10 hover:bg-white/15 border-white/15"
+                              )}
+                            >
+                              {q}p
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="ml-auto text-xs text-white/70">
                       {ep ? `${ep.name} — ${detail?.title ?? ""}` : "Memuat…"}
                     </div>
@@ -208,9 +264,11 @@ export function WatchClient({ bookId }: { bookId: string }) {
                   >
                     <div className="aspect-video w-full relative">
                       {e.thumbnail && (
-                        <img
+                        <Image
                           src={e.thumbnail}
                           alt={`${e.name} thumbnail`}
+                          width={256}
+                          height={144}
                           className="absolute inset-0 w-full h-full object-cover"
                           onError={(ev) =>
                             ((

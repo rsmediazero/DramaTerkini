@@ -1,6 +1,7 @@
 import useSWR from "swr";
 import { useDebouncedValue } from "./useDeboucedValue";
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const postJson = (url: string, body: any) =>
   fetch(url, {
     method: "POST",
