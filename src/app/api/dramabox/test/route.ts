@@ -1,24 +1,32 @@
-import type { NextApiRequest, NextApiResponse } from "next";
-import fetch from "node-fetch";
+// app/api/dramabox/route.ts
+import { NextRequest, NextResponse } from "next/server";
 
-// kamu bisa define tipe body supaya gampang
-interface DramaboxLoginBody {
-  loginType: string;
-  agent: string;
-  avatar: string;
-  email: string;
-  name: string;
-  isLoginFrame: number;
-  bindId: string;
-  loginTime: string;
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+// handle preflight
+export function OPTIONS(req: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
 }
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+// POST handler
+export async function POST(req: NextRequest) {
+  interface DramaboxLoginBody {
+    loginType: string;
+    agent: string;
+    avatar: string;
+    email: string;
+    name: string;
+    isLoginFrame: number;
+    bindId: string;
+    loginTime: string;
   }
 
   const {
@@ -30,7 +38,7 @@ export default async function handler(
     isLoginFrame,
     bindId,
     loginTime,
-  } = req.body as DramaboxLoginBody;
+  } = (await req.json()) as DramaboxLoginBody;
 
   const url =
     "https://sapi.dramaboxdb.com/drama-box/ur001/login?timestamp=1758272188638";
@@ -98,11 +106,14 @@ export default async function handler(
       body: JSON.stringify(body),
     });
 
-    // kalau API balas json, bisa pakai .json()
-    const text = await response.json();
-    return res.status(response.status).send(text);
+    // bisa .json() kalau API balas JSON
+    const data = await response.json();
+    return NextResponse.json({ data }, { status: response.status });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: "Failed to fetch dramabox" });
+    return NextResponse.json(
+      { error: "Failed to fetch dramabox" },
+      { status: 500 }
+    );
   }
 }
