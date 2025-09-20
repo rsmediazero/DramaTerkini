@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "i.ibb.co.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
         hostname: "nchapter.dramaboxdb.com",
         pathname: "/**",
       },
@@ -17,6 +22,11 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "nawsvideo.dramaboxdb.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "nakavideo.dramaboxdb.com",
         pathname: "/**",
       },
       {

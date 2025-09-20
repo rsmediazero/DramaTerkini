@@ -8,9 +8,9 @@ export type DramaBoxToken = { token: string; deviceid: string };
 
 export async function getDramaBoxToken(force = false): Promise<DramaBoxToken> {
   const now = Date.now();
-  if (!force && cachedToken && cachedToken.exp > now) {
-    return { token: cachedToken.token, deviceid: cachedToken.deviceid };
-  }
+  // if (!force && cachedToken && cachedToken.exp > now) {
+  //   return { token: cachedToken.token, deviceid: cachedToken.deviceid };
+  // }
 
   const url = process.env.DRAMABOX_TOKEN_URL!;
   if (!url) throw new Error("DRAMABOX_TOKEN_URL not set");
@@ -39,7 +39,6 @@ function getTimeZoneOffset(): string {
 }
 
 export function buildHeaders(tk: DramaBoxToken) {
-  console.log("TOKEN", tk.token);
   return {
     "User-Agent": "okhttp/4.10.0",
     "Accept-Encoding": "gzip",
@@ -50,7 +49,7 @@ export function buildHeaders(tk: DramaBoxToken) {
     cid: process.env.DRAMABOX_CID ?? "DRA1000042",
     "package-name":
       process.env.DRAMABOX_PACKAGE_NAME ?? "com.storymatrix.drama",
-    apn: "1",
+    apn: process.env.DRAMABOX_APN ?? "1",
     "device-id": tk.deviceid,
     language: process.env.DRAMABOX_LANGUAGE ?? "in",
     "current-language": process.env.DRAMABOX_LANGUAGE ?? "in",

@@ -5,9 +5,9 @@ import Client from "./WatchClient";
 export async function generateMetadata({
   params,
 }: {
-  params: { bookId: string };
+  params: Promise<{ bookId: string }>;
 }) {
-  const { bookId } = params;
+  const { bookId } = await params;
 
   const { data } = await fetchStream(bookId, 1);
   const d = data?.data ?? {};

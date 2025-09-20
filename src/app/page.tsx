@@ -8,6 +8,7 @@ import { useFeedInfinite } from "@/hooks/useFeedInfinite";
 import { useDebouncedValue } from "@/hooks/useDeboucedValue";
 import { useSearch } from "./components/Providers";
 import Iklan from "./components/Iklan";
+import DonaturLeaderboard from "./components/DonaturLeaderBoard";
 
 export default function Page() {
   const { query } = useSearch();
@@ -47,24 +48,29 @@ export default function Page() {
   return (
     <main className="py-6 sm:py-8 min-h-screen">
       <section className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 mb-6">
-        <Iklan className="min-h-40" />
+        <Iklan className="min-h-40" page="home" />
       </section>
 
       <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {!isSearch && (
-          <div className="mb-6 flex gap-3 items-center">
-            <DotLottieReact
-              src="/dotlottie/Fire.lottie"
-              loop
-              autoplay
-              className="w-24 mr-0 pr-0"
-            />
-            <div>
-              <h2 className="text-2xl mt-4 pl-0 mr-0 font-bold">Terbaru!</h2>
-              <p className="text-white/70 mt-1 pl-0 mr-0">
-                Nikmati drama <span className="font-semibold">terbaru</span>{" "}
-                setiap harinya dengan gratis!
-              </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+            <div className="mb-6 flex gap-3 items-center">
+              <DotLottieReact
+                src="/dotlottie/Fire.lottie"
+                loop
+                autoplay
+                className="w-24 mr-0 pr-0"
+              />
+              <div>
+                <h2 className="text-2xl mt-4 pl-0 mr-0 font-bold">Terbaru!</h2>
+                <p className="text-white/70 mt-1 pl-0 mr-0">
+                  Nikmati drama <span className="font-semibold">terbaru</span>{" "}
+                  setiap harinya dengan gratis!
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-center md:pr-8">
+              <DonaturLeaderboard />
             </div>
           </div>
         )}
