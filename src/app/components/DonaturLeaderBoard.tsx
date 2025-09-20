@@ -11,7 +11,7 @@ function DonaturLeaderboard() {
   const donaturList: {
     name: string;
     amount: number;
-  }[] = [];
+  }[] = [{ name: "Felix", amount: 50000 }];
 
   const sortedList = [...donaturList].sort((a, b) => b.amount - a.amount);
 
@@ -103,7 +103,7 @@ function DonaturLeaderboard() {
                   <Image
                     width={660}
                     height={800}
-                    src="https://i.ibb.co.com/RTb6Y8CH/Screenshot-2025-09-20-201612.png"
+                    src="/qr-donasi.png"
                     alt="QRIS Donasi"
                     className="mx-auto w-48 h-48 object-contain"
                   />
