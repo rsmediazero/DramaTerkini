@@ -1,5 +1,4 @@
 import { config } from "@/lib/config";
-import Link from "next/link";
 
 function Iklan({ className }: { className?: string }) {
   return (
