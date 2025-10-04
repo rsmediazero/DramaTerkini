@@ -30,15 +30,6 @@ export function WatchClient({ bookId }: { bookId: string }) {
   const [episodeIdx, setEpisodeIdx] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Auto-refresh jika halaman kosong
-  useEffect(() => {
-    if (!detail && !episodes.length) {
-      setTimeout(() => {
-        location.reload();
-      }, 3000);
-    }
-  }, [detail, episodes]);
-
   // Sync episode count dengan chapterCount
   const expectedCount = detail?.chapterCount ?? 0;
   useEffect(() => {
