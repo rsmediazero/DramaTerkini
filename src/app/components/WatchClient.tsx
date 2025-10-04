@@ -30,12 +30,36 @@ export function WatchClient({ bookId }: { bookId: string }) {
   const [episodeIdx, setEpisodeIdx] = useState(0);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
+  // Auto-refresh jika halaman kosong
+  useEffect(() => {
+    if (!detail && !episodes.length) {
+      setTimeout(() => {
+        location.reload();
+      }, 3000);
+    }
+  }, [detail, episodes]);
+
+  // Sync episode count dengan chapterCount
+  const expectedCount = detail?.chapterCount ?? 0;
+  useEffect(() => {
+    if (expectedCount > episodes.length && !isLoadingMore && !isReachingEnd) {
+      const diff = expectedCount - episodes.length;
+      const loadBatch = async () => {
+        for (let i = 0; i < Math.ceil(diff / 30); i++) {
+          await loadMore();
+          await new Promise((res) => setTimeout(res, 300));
+        }
+      };
+      loadBatch();
+    }
+  }, [expectedCount, episodes.length, isLoadingMore, isReachingEnd]);
+
   // safe guards
   const ep = episodes[episodeIdx];
   const cover = meta.bookCover ?? "";
   const poster = ep?.thumbnail || cover || "";
 
-  // --- CDN selection (di luar Plyr)
+  // --- CDN selection
   const cdnOptions = useMemo(
     () => Array.from(new Set((ep?.sources ?? []).map((s) => s.cdn))),
     [ep?.sources]
@@ -60,10 +84,12 @@ export function WatchClient({ bookId }: { bookId: string }) {
     [filteredSources]
   );
 
-  const defaultQ = useMemo(
-    () => detail?.uiHints?.defaultQuality ?? qualities[0],
-    [detail?.uiHints?.defaultQuality, qualities]
-  );
+  // Default quality 1080p, fallback 720p
+  const defaultQ = useMemo(() => {
+    if (qualities.includes(1080)) return 1080;
+    if (qualities.includes(720)) return 720;
+    return qualities[0] ?? 720;
+  }, [qualities]);
 
   useEffect(() => {
     const def =
@@ -76,7 +102,7 @@ export function WatchClient({ bookId }: { bookId: string }) {
   const { switchQuality } = usePlyrPlayer(videoRef, filteredSources, {
     poster: ep?.thumbnail ?? detail?.cover ?? null,
     orientation: detail?.orientation ?? "portrait",
-    defaultQuality: detail?.uiHints?.defaultQuality ?? 720,
+    defaultQuality: defaultQ,
     controls: [
       "quality",
       "play",
@@ -90,29 +116,18 @@ export function WatchClient({ bookId }: { bookId: string }) {
     ],
   });
 
-  const [quality, setQuality] = useState<number | undefined>(qualities[0]);
+  const [quality, setQuality] = useState<number | undefined>(defaultQ);
 
   useEffect(() => {
-    setQuality(qualities[0]);
-  }, [episodeIdx, cdn, qualities]);
+    setQuality(defaultQ);
+  }, [defaultQ]);
 
   const onSetQuality = async (q: number) => {
     setQuality(q);
     if (videoRef.current) switchQuality(q);
   };
 
-  // --- NEW: Load all episodes handler with delay
-  const [loadingAll, setLoadingAll] = useState(false);
-  const loadAllEpisodes = async () => {
-    setLoadingAll(true);
-    while (!isReachingEnd) {
-      await loadMore();
-      await new Promise((res) => setTimeout(res, 300)); // delay 300ms per batch
-    }
-    setLoadingAll(false);
-  };
-
-  // --- NEW: Link viewer state
+  // --- Link viewer state
   const [showLinkBox, setShowLinkBox] = useState(false);
   const [password, setPassword] = useState("");
   const [unlocked, setUnlocked] = useState(false);
@@ -126,10 +141,8 @@ export function WatchClient({ bookId }: { bookId: string }) {
     }
   };
 
-  const copyLink = () => {
-    const link = filteredSources?.[0]?.url || "";
-    if (!link) return;
-    navigator.clipboard.writeText(link);
+  const copyLink = (url: string) => {
+    navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -161,7 +174,7 @@ export function WatchClient({ bookId }: { bookId: string }) {
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/70">
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2.5 py-1 border border-white/10">
                   <svg
-                    xmlns="http://www.w3.org/2000/svg "
+                    xmlns="http://www.w3.org/2000/svg"
                     className="h-3.5 w-3.5"
                     viewBox="0 0 24 24"
                     fill="currentColor"
@@ -172,7 +185,7 @@ export function WatchClient({ bookId }: { bookId: string }) {
                 </span>
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/5 px-2.5 py-1 border border-white/10">
                   <svg
-                    xmlns="http://www.w3.org/2000/svg "
+                    xmlns="http://www.w3.org/2000/svg"
                     className="h-3.5 w-3.5"
                     fill="currentColor"
                     viewBox="0 0 24 24"
@@ -198,7 +211,6 @@ export function WatchClient({ bookId }: { bookId: string }) {
             {/* Player */}
             <section className="lg:col-span-2">
               <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-white/5">
-                {/* poster bg */}
                 <div
                   className="absolute inset-0 opacity-20"
                   style={{
@@ -222,10 +234,8 @@ export function WatchClient({ bookId }: { bookId: string }) {
                     preload="metadata"
                     controls
                   />
-                  {/* Overlay selectors: CDN + kualitas + now playing */}
                   <div className="absolute inset-x-0 top-0 p-3 sm:p-4">
                     <div className="glass rounded-xl px-3 sm:px-4 py-2 flex flex-wrap items-center gap-2">
-                      {/* CDN */}
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-white/70">CDN</span>
                         <select
@@ -244,12 +254,9 @@ export function WatchClient({ bookId }: { bookId: string }) {
                         </select>
                       </div>
 
-                      {/* QUALITY — tombol eksternal */}
                       {qualities.length > 1 && (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-white/70">
-                            Kualitas
-                          </span>
+                          <span className="text-xs text-white/70">Kualitas</span>
                           <div className="flex items-center gap-1">
                             {qualities.map((q) => (
                               <button
@@ -278,7 +285,6 @@ export function WatchClient({ bookId }: { bookId: string }) {
                 </div>
               </div>
 
-              {/* Description */}
               <div className="mt-4">
                 <p className="text-white/80">{detail?.description ?? ""}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -293,7 +299,7 @@ export function WatchClient({ bookId }: { bookId: string }) {
                 </div>
               </div>
 
-              {/* NEW: Link viewer box */}
+              {/* Link Video Box */}
               <div className="mt-6 glass rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-display text-lg">Link Video</h3>
@@ -323,23 +329,31 @@ export function WatchClient({ bookId }: { bookId: string }) {
                         </button>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <div className="text-xs text-white/70">
-                          {filteredSources?.[0]?.url || "Tidak ada link tersedia"}
-                        </div>
-                        {filteredSources?.[0]?.url && (
-                          <button
-                            onClick={copyLink}
-                            className={clsx(
-                              "rounded-lg px-4 py-2 text-sm border transition",
-                              copied
-                                ? "bg-green-500/25 border-green-500/50"
-                                : "bg-white/10 hover:bg-white/15 border-white/15"
-                            )}
-                          >
-                            {copied ? "Tersalin!" : "Salin Link"}
-                          </button>
-                        )}
+                      <div className="space-y-2 max-h-64 overflow-auto pr-2">
+                        {episodes.map((e) => {
+                          const src = e.sources?.[0]?.url || "";
+                          return src ? (
+                            <div
+                              key={e.id}
+                              className="flex items-center justify-between bg-white/5 border border-white/10 rounded-lg px-3 py-2"
+                            >
+                              <span className="text-xs text-white/80">
+                                {e.name}
+                              </span>
+                              <button
+                                onClick={() => copyLink(src)}
+                                className={clsx(
+                                  "rounded-md px-3 py-1 text-xs border transition",
+                                  copied
+                                    ? "bg-green-500/25 border-green-500/50"
+                                    : "bg-white/10 hover:bg-white/15 border-white/15"
+                                )}
+                              >
+                                {copied ? "Tersalin!" : "Salin"}
+                              </button>
+                            </div>
+                          ) : null;
+                        })}
                       </div>
                     )}
                   </div>
@@ -352,15 +366,6 @@ export function WatchClient({ bookId }: { bookId: string }) {
               <div className="glass rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-display text-lg">Pilih Episode</h3>
-                  {!isReachingEnd && (
-                    <button
-                      onClick={loadAllEpisodes}
-                      disabled={loadingAll}
-                      className="text-xs bg-white/10 hover:bg-white/15 border border-white/15 rounded-lg px-3 py-1 disabled:opacity-60"
-                    >
-                      {loadingAll ? "Memuat semua..." : "Muat semua episode"}
-                    </button>
-                  )}
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3 max-h-[28rem] overflow-auto pr-1 p-2">
                   {episodes.map((e, i) => (
@@ -395,7 +400,7 @@ export function WatchClient({ bookId }: { bookId: string }) {
                         <div className="absolute inset-x-1.5 bottom-1.5 flex justify-end">
                           <span className="inline-flex items-center gap-1.5 text-[10px] bg-black/55 px-2 py-0.5 rounded-full border border-white/10">
                             <svg
-                              xmlns="http://www.w3.org/2000/svg "
+                              xmlns="http://www.w3.org/2000/svg"
                               className="h-3 w-3"
                               viewBox="0 0 24 24"
                               fill="currentColor"
